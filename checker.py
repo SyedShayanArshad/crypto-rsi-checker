@@ -110,5 +110,5 @@ def get_coins_with_high_change_and_recent_high():
 
 if __name__ == "__main__":
     # get_coins_with_high_change_and_recent_high()
-    send_telegram_message("Checking through github actions"):
+    send_telegram_message("Checking through github actions")
     
