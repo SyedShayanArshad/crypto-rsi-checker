@@ -109,4 +109,6 @@ def get_coins_with_high_change_and_recent_high():
         print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    get_coins_with_high_change_and_recent_high()
+    # get_coins_with_high_change_and_recent_high()
+    send_telegram_message("Checking through github actions):
+    
