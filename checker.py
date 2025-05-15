@@ -1,8 +1,9 @@
-import requests
+from binance.client import Client
 import time
 from datetime import datetime
 import pandas as pd
 from ta.momentum import RSIIndicator
+import requests  # Still needed for Telegram API
 
 def send_telegram_message(message):
     bot_token = '8015673819:AAFyo0biUw4lauoFHsBXTxo1RT-UcYmrVT0'
@@ -14,18 +15,20 @@ def send_telegram_message(message):
         'parse_mode': 'Markdown'
     }
     try:
-        response = requests.post(url, data=payload,timeout=10)
+        response = requests.post(url, data=payload, timeout=10)
         response.raise_for_status()
     except Exception as e:
         print(f"Telegram message error: {e}")
-        
 
 def get_coins_with_high_change_and_recent_high():
     try:
-        url_ticker = "https://api.binance.com/api/v3/ticker/24hr"
-        response = requests.get(url_ticker)
-        response.raise_for_status()
-        tickers = response.json()
+        # Initialize Binance client (replace with your API keys)
+        api_key = 'YOUR_BINANCE_API_KEY'
+        api_secret = 'YOUR_BINANCE_API_SECRET'
+        client = Client(api_key, api_secret)
+
+        # Get 24hr ticker data
+        tickers = client.get_ticker()
 
         high_change_coins = []
         for ticker in tickers:
@@ -45,18 +48,11 @@ def get_coins_with_high_change_and_recent_high():
             symbol = coin['symbol']
             high_price_24h = coin['high_price_24h']
 
-            url_kline = "https://api.binance.com/api/v3/klines"
-            params = {
-                'symbol': symbol,
-                'interval': '1m',
-                'limit': 20  # Use more data for better RSI
-            }
-            response_kline = requests.get(url_kline, params=params)
-            response_kline.raise_for_status()
-            klines = response_kline.json()
+            # Get 1-minute klines (candlestick data)
+            klines = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=20)
 
-            high_prices = [float(kline[2]) for kline in klines]
-            close_prices = [float(kline[4]) for kline in klines]
+            high_prices = [float(kline[2]) for kline in klines]  # High prices
+            close_prices = [float(kline[4]) for kline in klines]  # Closing prices
 
             if not close_prices or len(close_prices) < 14:
                 continue  # Not enough data for RSI
@@ -65,7 +61,7 @@ def get_coins_with_high_change_and_recent_high():
             rsi_series = RSIIndicator(pd.Series(close_prices)).rsi()
             current_rsi = rsi_series.iloc[-1]
 
-            # Apply RSI > 70 filter
+            # Apply RSI > 70 filter (optional, commented out as in original)
             # if current_rsi <= 70:
             #     continue  # Not overbought, skip
 
@@ -109,11 +105,8 @@ def get_coins_with_high_change_and_recent_high():
             send_telegram_message(message)
         else:
             print("No coins found with high change and recent high.")
-    except requests.exceptions.RequestException as e:
-        print(f"Network error occurred: {str(e)}")
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     get_coins_with_high_change_and_recent_high()
-
